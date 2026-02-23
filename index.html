@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Meeting Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{--bg:#0a0a0a;--fg:#f0ede6;--accent:#c8ff00;--mid:#111;--dim:#444;--border:rgba(255,255,255,0.07);}
+    body{background:var(--bg);color:var(--fg);font-family:'Syne',sans-serif;min-height:100vh;}
+    nav{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 3rem;border-bottom:1px solid var(--border);background:rgba(10,10,10,0.9);}
+    .logo{font-family:'Space Mono',monospace;font-size:0.9rem;letter-spacing:0.15em;color:var(--accent);text-decoration:none;}
+    .nav-right{display:flex;align-items:center;gap:0.4rem;}
+    .lang-btn{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);background:transparent;border:1px solid transparent;padding:0.3rem 0.65rem;cursor:pointer;transition:all 0.2s;}
+    .lang-btn:hover{color:var(--fg);}
+    .lang-btn.active{color:var(--accent);border-color:rgba(200,255,0,0.45);}
+    .nav-sep{width:1px;height:16px;background:rgba(255,255,255,0.1);margin:0 0.4rem;}
+    .nav-back{font-family:'Space Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);text-decoration:none;border:1px solid var(--border);padding:0.4rem 0.9rem;transition:all 0.2s;}
+    .nav-back:hover{color:var(--fg);border-color:var(--dim);}
+    .hero{padding:5rem 3rem 3rem;max-width:800px;margin:0 auto;text-align:center;}
+    .tag{display:inline-flex;align-items:center;gap:0.5rem;font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(200,255,0,0.3);padding:0.3rem 0.9rem;margin-bottom:1.5rem;}
+    .tag::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.08;margin-bottom:1rem;}
+    .accent{color:var(--accent);}
+    .hero-sub{font-family:'Space Mono',monospace;font-size:0.75rem;color:#666;line-height:1.9;max-width:560px;margin:0 auto 3rem;}
+    .card{max-width:760px;margin:0 auto;border:1px solid var(--border);background:var(--mid);}
+    .card-header{padding:1.8rem 2.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .card-tag{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);}
+    .card-title{font-size:1.1rem;font-weight:700;margin-top:0.2rem;}
+    .card-body{padding:2.5rem;}
+    .field{margin-bottom:1.5rem;}
+    .field-label{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--dim);margin-bottom:0.5rem;display:block;}
+    .field-input,.field-textarea{width:100%;font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--fg);background:rgba(255,255,255,0.03);border:1px solid var(--border);padding:0.85rem 1rem;outline:none;transition:border-color 0.2s;resize:none;}
+    .field-input:focus,.field-textarea:focus{border-color:rgba(200,255,0,0.4);}
+    .field-textarea{height:200px;line-height:1.8;}
+    .field-hint{font-family:'Space Mono',monospace;font-size:0.58rem;color:#333;margin-top:0.4rem;}
+    .divider{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+    .emp-list{display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1rem;}
+    .emp-row{display:grid;grid-template-columns:1fr 1fr auto;gap:0.6rem;align-items:center;}
+    .emp-remove{font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--dim);background:none;border:1px solid var(--border);width:36px;height:36px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .emp-remove:hover{border-color:#ff003c;color:#ff003c;}
+    .btn-add{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);background:none;border:1px solid rgba(200,255,0,0.3);padding:0.5rem 1rem;cursor:pointer;transition:all 0.2s;margin-bottom:2rem;}
+    .btn-add:hover{background:rgba(200,255,0,0.08);}
+    .btn-primary{font-family:'Space Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--bg);background:var(--accent);border:none;padding:1rem 2rem;cursor:pointer;transition:opacity 0.2s;width:100%;}
+    .btn-primary:hover{opacity:0.85;}
+    .btn-secondary{font-family:'Space Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg);background:none;border:1px solid var(--dim);padding:1rem 2rem;cursor:pointer;transition:all 0.2s;width:100%;}
+    .btn-secondary:hover{border-color:var(--fg);}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    .proc-wrap{padding:4rem;text-align:center;}
+    .proc-icon{font-size:2rem;margin-bottom:1rem;animation:spin 2s linear infinite;display:inline-block;}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    .proc-text{font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--accent);letter-spacing:0.1em;}
+    .proc-sub{font-family:'Space Mono',monospace;font-size:0.6rem;color:#444;margin-top:0.5rem;}
+    .result-section{margin-bottom:2rem;}
+    .result-label{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.8rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);}
+    .result-text{font-family:'Space Mono',monospace;font-size:0.7rem;color:#aaa;line-height:1.9;white-space:pre-wrap;}
+    .task-item{display:flex;gap:1rem;padding:0.8rem 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+    .task-item:last-child{border-bottom:none;}
+    .task-check{width:16px;height:16px;border:1px solid rgba(200,255,0,0.4);flex-shrink:0;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--accent);}
+    .task-check.done{background:rgba(200,255,0,0.12);}
+    .task-body{flex:1;}
+    .task-title{font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--fg);margin-bottom:0.25rem;}
+    .task-meta{font-family:'Space Mono',monospace;font-size:0.58rem;color:#444;}
+    .email-block{background:rgba(255,255,255,0.02);border:1px solid var(--border);padding:1.2rem;margin-bottom:1rem;}
+    .email-to{font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--dim);margin-bottom:0.3rem;}
+    .email-body{font-family:'Space Mono',monospace;font-size:0.68rem;color:#888;line-height:1.8;white-space:pre-wrap;margin-top:0.6rem;}
+    .badge{font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.25rem 0.6rem;border:1px solid rgba(200,255,0,0.3);color:var(--accent);}
+    .hidden{display:none;}
+    @media(max-width:650px){
+      nav{padding:1rem;}
+      .hero{padding:3rem 1rem 2rem;}
+      .card-body{padding:1.5rem;}
+      .two-col{grid-template-columns:1fr;}
+      .emp-row{grid-template-columns:1fr;gap:0.4rem;}.emp-row .field-input,.emp-row .emp-remove{width:100%;}
+    }
+  </style>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="logo">// AI_LV</a>
+  <div class="nav-right">
+    <button class="lang-btn active" data-lang="0">EN</button>
+    <button class="lang-btn" data-lang="1">LV</button>
+    <button class="lang-btn" data-lang="2">RU</button>
+    <div class="nav-sep"></div>
+    <a href="index.html" class="nav-back" id="navBack">Back</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="tag" id="heroTag">AI Meeting Assistant</div>
+  <h1><span id="heroH1">Turn Any Meeting Into</span><br><span class="accent" id="heroAccent">Instant Action</span></h1>
+  <p class="hero-sub" id="heroSub">Add your team, write meeting notes once. AI reads everything and sends each person only their own tasks.</p>
+</div>
+
+<!-- MAIN FORM -->
+<div class="card" id="cardForm">
+  <div class="card-header">
+    <div>
+      <div class="card-tag" id="formTag">// New Meeting</div>
+      <div class="card-title" id="formTitle">Meeting Details</div>
+    </div>
+  </div>
+  <div class="card-body">
+
+    <!-- Meeting info -->
+    <div class="two-col" style="margin-bottom:1.5rem;">
+      <div class="field" style="margin:0;">
+        <label class="field-label" id="lblMTitle">Meeting Title</label>
+        <input class="field-input" type="text" id="meetingTitle"/>
+      </div>
+      <div class="field" style="margin:0;">
+        <label class="field-label" id="lblDate">Date</label>
+        <input class="field-input" type="date" id="meetingDate"/>
+      </div>
+    </div>
+    <div class="two-col" style="margin-bottom:1.5rem;">
+      <div class="field" style="margin:0;">
+        <label class="field-label" id="lblManager">Your Email (Manager)</label>
+        <input class="field-input" type="email" id="managerEmail" placeholder="your@email.com"/>
+      </div>
+      <div class="field" style="margin:0;">
+        <label class="field-label" id="lblManagerName">Your Name</label>
+        <input class="field-input" type="text" id="managerName" placeholder="First Last"/>
+      </div>
+    </div>
+
+    <hr class="divider"/>
+
+    <!-- Team members -->
+    <div class="field-label" id="lblTeam" style="margin-bottom:1rem;">Team Members</div>
+    <div class="emp-list" id="empList">
+      <div class="emp-row">
+        <input class="field-input" type="text" placeholder="First Last"/>
+        <input class="field-input" type="email" placeholder="email@company.com"/>
+        <button class="emp-remove" onclick="this.parentElement.remove()">x</button>
+      </div>
+      <div class="emp-row">
+        <input class="field-input" type="text" placeholder="First Last"/>
+        <input class="field-input" type="email" placeholder="email@company.com"/>
+        <button class="emp-remove" onclick="this.parentElement.remove()">x</button>
+      </div>
+    </div>
+    <button class="btn-add" id="btnAdd" onclick="addEmployee()">+ Add Person</button>
+
+    <hr class="divider"/>
+
+    <!-- Notes -->
+    <div class="field">
+      <label class="field-label" id="lblNotes">Meeting Notes</label>
+      <textarea class="field-textarea" id="meetingNotes"></textarea>
+      <div class="field-hint" id="hintNotes">// Write freely. Mention names so AI knows who is responsible for what.</div>
+    </div>
+
+    <button class="btn-primary" id="btnGenerate" onclick="generate()">Generate Protocol</button>
+  </div>
+</div>
+
+<!-- PROCESSING -->
+<div class="card hidden" id="cardProc">
+  <div class="proc-wrap">
+    <div class="proc-icon">&#8635;</div>
+    <div class="proc-text" id="procText">Analyzing notes...</div>
+    <div class="proc-sub" id="procSub">AI is reading your notes</div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="card hidden" id="cardResult">
+  <div class="card-header">
+    <div>
+      <div class="card-tag" id="resTag">// Result</div>
+      <div class="card-title" id="resTitle">Protocol Ready</div>
+    </div>
+    <span class="badge" id="badgeDone">Generated</span>
+  </div>
+  <div class="card-body">
+    <div class="result-section">
+      <div class="result-label" id="secProtocol">Meeting Summary</div>
+      <div class="result-text" id="resProtocol"></div>
+    </div>
+    <div class="result-section">
+      <div class="result-label" id="secTasks">Task List</div>
+      <div id="resTasks"></div>
+    </div>
+    <div class="result-section">
+      <div class="result-label" id="secEmails">Emails Per Person</div>
+      <div id="resEmails"></div>
+    </div>
+    <div class="two-col" style="margin-top:2rem;">
+      <button class="btn-secondary" id="btnNew" onclick="startOver()">New Meeting</button>
+      <button class="btn-primary" id="btnCopy" onclick="copyAll()">Copy Protocol</button>
+    </div>
+  </div>
+</div>
+
+<div style="height:4rem;"></div>
+
+<script>
+(function(){emailjs.init({publicKey:"IZ-gyscqu9X-OrE72UCZw"});})();
+document.getElementById('meetingDate').valueAsDate = new Date();
+
+var L = [
+  {
+    navBack:'Back to main',
+    heroTag:'AI Meeting Assistant',
+    heroH1:'Turn Any Meeting Into',
+    heroAccent:'Instant Action',
+    heroSub:'Add your team, write meeting notes once. AI reads everything and sends each person only their own tasks.',
+    formTag:'// New Meeting', formTitle:'Meeting Details',
+    lblMTitle:'Meeting Title', lblDate:'Date', lblTeam:'Team Members',
+    lblNotes:'Meeting Notes',
+    phTitle:'e.g. Weekly Sales Review',
+    phNotes:'Write everything that was discussed. Mention names so AI knows who is responsible for what.\n\nExample:\nWe discussed Q1 results. Sales are 15% behind target. John will contact the top 10 clients by Friday. Anna prepares a new pricing proposal by Wednesday. Peter reviews the website analytics and reports back next Monday.',
+    hintNotes:'// Write freely. Mention names so AI knows who is responsible for what.',
+    lblManager:'Your Email (Manager)',lblManagerName:'Your Name',phManagerEmail:'your@email.com',phManagerName:'First Last',phEmpName:'First Last',phEmpEmail:'email@company.com',btnAdd:'+ Add Person', btnGenerate:'Generate Protocol',
+    resTag:'// Result', resTitle:'Protocol Ready',
+    badgeDone:'Generated',
+    secProtocol:'Meeting Summary', secTasks:'Task List', secEmails:'Emails Per Person',
+    btnNew:'New Meeting', btnCopy:'Copy Protocol',
+    procTexts:[
+      ['Analyzing notes...','AI is reading your notes'],
+      ['Identifying tasks...','Matching names to responsibilities'],
+      ['Writing protocol...','Structuring the discussion'],
+      ['Preparing emails...','Creating individual messages']
+    ],
+    promptLang:'English',
+    alertFill:'Please fill in the meeting title and notes.',
+    alertEmp:'Please add at least one team member with name and email.',alertManager:'Please enter your email address.'
+  },
+  {
+    navBack:'Atpakal uz galveno',
+    heroTag:'AI Sapulces Asistents',
+    heroH1:'Pārvērt jebkuru sapulci',
+    heroAccent:'Tūlītējā Rīcībā',
+    heroSub:'Pievieno komandu, uzraksti piezīmes vienreiz. AI izlasa visu un katrai personai nosūta tikai viņa uzdevumus.',
+    formTag:'// Jauna Sapulce', formTitle:'Sapulces Informācija',
+    lblMTitle:'Sapulces Nosaukums', lblDate:'Datums', lblTeam:'Komandas Dalībnieki',
+    lblNotes:'Sapulces Piezīmes',
+    phTitle:'piem. Iknedēļas Pārdošanas Apskats',
+    phNotes:'Uzraksti visu ko apspriedāt. Piemin vārdus lai AI zina kas par ko atbild.\n\nPiemers:\nApspriedām Q1 rezultātus. Pārdošana atpaliek par 15%. Jānis sazināsies ar 10 lielākajiem klientiem līdz piektdienai. Anna sagatavo jaunu cenu piedāvājumu līdz trešdienai. Pēteris pārskata mājaslapas analītiku un ziņo nākamajā pirmdienā.',
+    hintNotes:'// Raksti brīvi. Piemin vārdus lai AI zina kas par ko atbild.',
+    lblManager:'Jūsu E-pasts (Vadītājs)',lblManagerName:'Jūsu Vārds',phManagerEmail:'jusu@uznemums.lv',phManagerName:'Vārds Uzvārds',phEmpName:'Vārds Uzvārds',phEmpEmail:'epasts@uznemums.lv',btnAdd:'+ Pievienot personu', btnGenerate:'Ģenerēt Protokolu',
+    resTag:'// Rezultāts', resTitle:'Protokols Gatavs',
+    badgeDone:'Ģenerēts',
+    secProtocol:'Sapulces Kopsavilkums', secTasks:'Uzdevumu Saraksts', secEmails:'E-pasti Katrai Personai',
+    btnNew:'Jauna Sapulce', btnCopy:'Kopēt Protokolu',
+    procTexts:[
+      ['Analizē piezīmes...','AI lasa Tavas piezīmes'],
+      ['Identificē uzdevumus...','Savieno vārdus ar pienākumiem'],
+      ['Raksta protokolu...','Strukturē apspriesto'],
+      ['Sagatavo e-pastus...','Veido individuālos ziņojumus']
+    ],
+    promptLang:'Latvian',
+    alertFill:'Lūdzu aizpildi sapulces nosaukumu un piezīmes.',
+    alertEmp:'Lūdzu pievieno vismaz vienu dalībnieku ar vārdu un e-pastu.',alertManager:'Lūdzu ievadi savu e-pasta adresi.'
+  },
+  {
+    navBack:'Назад на главную',
+    heroTag:'ИИ Ассистент Совещаний',
+    heroH1:'Превратите любое совещание в',
+    heroAccent:'Мгновенное Действие',
+    heroSub:'Добавьте команду, напишите заметки один раз. ИИ прочитает всё и отправит каждому только его задачи.',
+    formTag:'// Новое Совещание', formTitle:'Детали Совещания',
+    lblMTitle:'Название Совещания', lblDate:'Дата', lblTeam:'Участники',
+    lblNotes:'Заметки Совещания',
+    phTitle:'напр. Еженедельный обзор продаж',
+    phNotes:'Напишите всё что обсуждалось. Упоминайте имена чтобы ИИ знал кто за что отвечает.\n\nПример:\nОбсудили итоги Q1. Продажи отстают на 15%. Иван свяжется с 10 крупнейшими клиентами до пятницы. Анна подготовит новое ценовое предложение до среды. Петр проверит аналитику сайта и доложит в следующий понедельник.',
+    hintNotes:'// Пишите свободно. Упоминайте имена чтобы ИИ знал кто за что отвечает.',
+    lblManager:'Ваш Email (Менеджер)',lblManagerName:'Ваше Имя',phManagerEmail:'ваш@компания.ru',phManagerName:'Имя Фамилия',phEmpName:'Имя Фамилия',phEmpEmail:'email@компания.ru',btnAdd:'+ Добавить участника', btnGenerate:'Создать Протокол',
+    resTag:'// Результат', resTitle:'Протокол Готов',
+    badgeDone:'Создан',
+    secProtocol:'Резюме Совещания', secTasks:'Список Задач', secEmails:'Письма Участникам',
+    btnNew:'Новое Совещание', btnCopy:'Копировать Протокол',
+    procTexts:[
+      ['Анализирую заметки...','ИИ читает ваши заметки'],
+      ['Определяю задачи...','Связываю имена с обязанностями'],
+      ['Пишу протокол...','Структурирую обсуждение'],
+      ['Готовлю письма...','Создаю индивидуальные сообщения']
+    ],
+    promptLang:'Russian',
+    alertFill:'Пожалуйста заполните название и заметки совещания.',
+    alertEmp:'Пожалуйста добавьте хотя бы одного участника с именем и email.',alertManager:'Пожалуйста введите ваш email адрес.'
+  }
+];
+
+var curLang = 0;
+
+function applyLang(idx){
+  var l = L[idx]; curLang = idx;
+  document.getElementById('navBack').textContent = l.navBack;
+  document.getElementById('heroTag').textContent = l.heroTag;
+  document.getElementById('heroH1').textContent = l.heroH1;
+  document.getElementById('heroAccent').textContent = l.heroAccent;
+  document.getElementById('heroSub').textContent = l.heroSub;
+  document.getElementById('formTag').textContent = l.formTag;
+  document.getElementById('formTitle').textContent = l.formTitle;
+  document.getElementById('lblMTitle').textContent = l.lblMTitle;
+  document.getElementById('lblDate').textContent = l.lblDate;
+  document.getElementById('lblTeam').textContent = l.lblTeam;
+  document.getElementById('lblNotes').textContent = l.lblNotes;
+  document.getElementById('meetingTitle').placeholder = l.phTitle;
+  document.getElementById('meetingNotes').placeholder = l.phNotes;
+  document.getElementById('hintNotes').textContent = l.hintNotes;
+  document.getElementById('lblManager').textContent = l.lblManager;
+  document.getElementById('lblManagerName').textContent = l.lblManagerName;
+  document.getElementById('managerEmail').placeholder = l.phManagerEmail;
+  document.getElementById('managerName').placeholder = l.phManagerName;
+  document.getElementById('btnAdd').textContent = l.btnAdd;
+  // Update existing emp rows placeholders
+  document.querySelectorAll('.emp-row input[type=text]').forEach(function(el){el.placeholder=l.phEmpName;});
+  document.querySelectorAll('.emp-row input[type=email]').forEach(function(el){el.placeholder=l.phEmpEmail;});
+  document.getElementById('btnGenerate').textContent = l.btnGenerate;
+  document.getElementById('resTag').textContent = l.resTag;
+  document.getElementById('resTitle').textContent = l.resTitle;
+  document.getElementById('badgeDone').textContent = l.badgeDone;
+  document.getElementById('secProtocol').textContent = l.secProtocol;
+  document.getElementById('secTasks').textContent = l.secTasks;
+  document.getElementById('secEmails').textContent = l.secEmails;
+  document.getElementById('btnNew').textContent = l.btnNew;
+  document.getElementById('btnCopy').textContent = l.btnCopy;
+}
+
+document.querySelectorAll('.lang-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    applyLang(parseInt(btn.dataset.lang));
+  });
+});
+
+function addEmployee(){
+  var list = document.getElementById('empList');
+  var row = document.createElement('div');
+  row.className = 'emp-row';
+  var l = L[curLang];
+  row.innerHTML = '<input class="field-input" type="text" placeholder="'+l.phEmpName+'"/><input class="field-input" type="email" placeholder="'+l.phEmpEmail+'"/><button class="emp-remove" onclick="this.parentElement.remove()">x</button>';
+  list.appendChild(row);
+}
+
+async function generate(){
+  var title = document.getElementById('meetingTitle').value.trim();
+  var notes = document.getElementById('meetingNotes').value.trim();
+  var managerEmail = document.getElementById('managerEmail').value.trim();
+  var managerName = document.getElementById('managerName').value.trim();
+  if(!title || !notes){ alert(L[curLang].alertFill); return; }
+  if(!managerEmail){ alert(L[curLang].alertManager); return; }
+
+  var rows = document.getElementById('empList').querySelectorAll('.emp-row');
+  var employees = [];
+  rows.forEach(function(row){
+    var inputs = row.querySelectorAll('input');
+    var name = inputs[0].value.trim();
+    var email = inputs[1].value.trim();
+    if(name && email) employees.push({name:name, email:email});
+  });
+  if(employees.length === 0){ alert(L[curLang].alertEmp); return; }
+
+  var date = document.getElementById('meetingDate').value;
+  var lang = L[curLang].promptLang;
+  var managerEmail = document.getElementById('managerEmail').value.trim();
+  var managerName = document.getElementById('managerName').value.trim();
+
+  document.getElementById('cardForm').classList.add('hidden');
+  document.getElementById('cardProc').classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  var procTexts = L[curLang].procTexts;
+  var pi = 0;
+  var iv = setInterval(function(){
+    if(pi < procTexts.length){
+      document.getElementById('procText').textContent = procTexts[pi][0];
+      document.getElementById('procSub').textContent = procTexts[pi][1];
+      pi++;
+    }
+  }, 1400);
+
+  var empStr = employees.map(function(e){ return e.name + ' (' + e.email + ')'; }).join(', ');
+
+  var prompt = 'You are an executive assistant. Generate a meeting protocol in ' + lang + ' language.\n\nMeeting: ' + title + '\nDate: ' + date + '\nManager: ' + managerName + ' (' + managerEmail + ')\nTeam: ' + empStr + '\n\nMeeting notes:\n' + notes + '\n\nInstructions: Read the notes carefully. Identify which tasks belong to which person based on the names mentioned. Generate individual emails for each person with only their own tasks. Use commas instead of dashes.\n\nRespond ONLY with valid JSON:\n{"summary":"3-5 sentence meeting summary. Use commas not dashes.","tasks":[{"title":"task description","owner":"full name","deadline":"specific deadline or ASAP","priority":"high/medium/low"}],"emails":[{"to_name":"full name","to_email":"email address","subject":"subject line","body":"professional email with only this persons tasks. Use commas not dashes."}]}';
+
+  try{
+    var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:1500,
+        messages:[{role:'user', content:prompt}]
+      })
+    });
+    clearInterval(iv);
+    var data = await res.json();
+    var text = data.choices[0].message.content;
+    var parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    renderResults(parsed);
+    // Send emails via EmailJS
+    await sendEmails(parsed, managerEmail, managerName, title, date);
+    document.getElementById('cardProc').classList.add('hidden');
+    document.getElementById('cardResult').classList.remove('hidden');
+    window.scrollTo({top:0, behavior:'smooth'});
+  } catch(err){
+    clearInterval(iv);
+    alert('Error. Please try again.');
+    document.getElementById('cardProc').classList.add('hidden');
+    document.getElementById('cardForm').classList.remove('hidden');
+  }
+}
+
+
+async function sendEmails(data, managerEmail, managerName, title, date){
+  var SERVICE_ID = 'service_yf5cbrz';
+  var TEMPLATE_ID = 'template_6t53ofc';
+
+  for(var i=0; i<(data.emails||[]).length; i++){
+    var e = data.emails[i];
+    try{
+      await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+        to_email: e.to_email,
+        subject: e.subject,
+        message: e.body,
+        name: managerName
+      });
+    } catch(err){
+      console.log('Email error:', err);
+    }
+  }
+
+  var taskLines = [];
+  (data.tasks||[]).forEach(function(t,i){
+    taskLines.push((i+1)+'. '+t.title+' / '+t.owner+' / '+t.deadline);
+  });
+  var managerMsg = ['Meeting: '+title,'Date: '+date,'','SUMMARY:',data.summary,'','TASKS:'].concat(taskLines).join('\n');
+
+  try{
+    await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+      to_email: managerEmail,
+      subject: 'Protocol: '+title+' ('+date+')',
+      message: managerMsg,
+      name: managerName
+    });
+  } catch(err){
+    console.log('Manager email error:', err);
+  }
+}
+
+function renderResults(data){
+  document.getElementById('resProtocol').textContent = data.summary || '';
+
+  var tEl = document.getElementById('resTasks');
+  tEl.innerHTML = '';
+  (data.tasks||[]).forEach(function(t){
+    var d = document.createElement('div');
+    d.className = 'task-item';
+    var pc = t.priority==='high' ? 'color:#ff6b6b' : t.priority==='medium' ? 'color:#ffaa00' : 'color:#555';
+    d.innerHTML = '<div class="task-check" onclick="this.classList.toggle(\'done\');this.textContent=this.classList.contains(\'done\')?\'v\':\'\'"></div><div class="task-body"><div class="task-title">'+t.title+'</div><div class="task-meta">'+t.owner+' &nbsp;·&nbsp; '+t.deadline+' &nbsp;·&nbsp; <span style="'+pc+'">'+t.priority+'</span></div></div>';
+    tEl.appendChild(d);
+  });
+
+  var eEl = document.getElementById('resEmails');
+  eEl.innerHTML = '';
+  (data.emails||[]).forEach(function(e){
+    var d = document.createElement('div');
+    d.className = 'email-block';
+    d.innerHTML = '<div class="email-to">To: <span style="color:var(--accent)">'+e.to_name+'</span> &lt;'+e.to_email+'&gt;</div><div class="email-to">Subject: '+e.subject+'</div><div class="email-body">'+e.body+'</div>';
+    eEl.appendChild(d);
+  });
+
+  window._lastResult = data;
+  window._managerEmail = managerEmail;
+  window._managerName = managerName;
+  window._meetingTitle = title;
+  window._meetingDate = date;
+}
+
+function copyAll(){
+  var d = window._lastResult;
+  if(!d) return;
+  var t = '=== SUMMARY ===\n\n' + d.summary + '\n\n=== TASKS ===\n\n';
+  (d.tasks||[]).forEach(function(task, i){
+    t += (i+1) + '. ' + task.title + '\n   ' + task.owner + ' / ' + task.deadline + '\n\n';
+  });
+  navigator.clipboard.writeText(t).then(function(){
+    var btn = document.getElementById('btnCopy');
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function(){ btn.textContent = orig; }, 2000);
+  });
+}
+
+function startOver(){
+  document.getElementById('cardResult').classList.add('hidden');
+  document.getElementById('cardForm').classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
